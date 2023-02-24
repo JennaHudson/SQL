@@ -1,0 +1,100 @@
+---Let's inspect the sales data I just imported into Microsoft SQL Server
+
+SELECT * FROM [dbo].[sales_data_sample]
+
+--Checking unique values using DISTINCT
+SELECT DISTINCT STATUS FROM [dbo].[sales_data_sample] 
+SELECT DISTINCT YEAR_ID FROM [dbo].[sales_data_sample] 
+SELECT DISTINCT PRODUCTLINE FROM [dbo].[sales_data_sample] 
+SELECT DISTINCT COUNTRY FROM [dbo].[sales_data_sample] 
+SELECT DISTINCT DEALSIZE FROM [dbo].[sales_data_sample] 
+SELECT DISTINCT TERRITORY FROM [dbo].[sales_data_sample]
+
+---ANALYSIS
+-- Grouping sales by product line. Using aggregate function SUM of sales by the product line to see what product sells the most!
+SELECT PRODUCTLINE, SUM(SALES) Revenue 
+FROM [dbo].[sales_data_sample]
+GROUP BY PRODUCTLINE
+ORDER BY 2 desc 
+--It's Classic Cars that sell the most!
+--I'm calling sales "Revenue"
+--An aggregate function must be accompanied with a group by to categorize the sales across the product
+--Ordering by Revenue which is 2(position 2 in select statement). Chose decending order so the highest amount will be on top.
+
+--Knowing that information let's see which year they made the most sales
+SELECT YEAR_ID, SUM(SALES) Revenue 
+FROM [dbo].[sales_data_sample]
+GROUP BY YEAR_ID
+ORDER BY 2 desc
+
+--2004 had the most sales. Sales were much lower in 2005 compared to the other years. Why? Marketing? Didn't operate part of the year?
+--Let's find out if they operated a full year in 2005. I'm doing a distinct on the month too see how many months they were operating.
+SELECT DISTINCT MONTH_ID FROM [dbo].[sales_data_sample]
+WHERE YEAR_ID = 2005
+--They operated for only 5 months in 2005 from Jan to May contributing to the low sales
+
+--Let's double check the other years for months of operation
+SELECT DISTINCT MONTH_ID FROM [dbo].[sales_data_sample]
+WHERE YEAR_ID = 2004
+
+SELECT DISTINCT MONTH_ID FROM [dbo].[sales_data_sample]
+WHERE YEAR_ID = 2003
+--2003 and 2004 operated for a full year.
+
+--Let's do a group by with the deal size
+SELECT DEALSIZE, SUM(SALES) Revenue
+FROM [dbo].[sales_data_sample]
+GROUP BY DEALSIZE
+ORDER BY 2 DESC
+--The medium size deals generates the most revenue.
+
+--What was the best month for sales in a specific year? How much was earned that month?
+SELECT MONTH_ID, SUM(SALES) Revenue, COUNT(ORDERNUMBER) Frequency
+FROM [dbo].[sales_data_sample]
+WHERE YEAR_ID = 2003
+GROUP BY MONTH_ID
+ORDER BY 2 DESC
+--Sales were exceptional in November 2003
+
+--Checking 2004
+SELECT MONTH_ID, SUM(SALES) Revenue, COUNT(ORDERNUMBER) Frequency
+FROM [dbo].[sales_data_sample]
+WHERE YEAR_ID = 2004
+GROUP BY MONTH_ID
+ORDER BY 2 DESC
+--November wins again in 2004
+--Remeber the data is only up until May in 2005 so it would not be a true reflction of the entire year.
+
+--Can conclude the higest revenue month is November
+
+--What product line sells most in best month?
+SELECT MONTH_ID, PRODUCTLINE, SUM(SALES) Revenue, COUNT(ORDERNUMBER) Frequency
+FROM [dbo].[sales_data_sample]
+WHERE YEAR_ID = 2003 AND MONTH_ID = 11
+GROUP BY MONTH_ID, PRODUCTLINE
+ORDER BY 3 DESC
+--Classic cars had the most revenue for 11/2003
+--I introduced product line so I have to include that in the group by clause
+--I'm doing the order by 3 because the third column is the Revenue Column
+
+--Repeating the query for 11/2004
+SELECT MONTH_ID, PRODUCTLINE, SUM(SALES) Revenue, COUNT(ORDERNUMBER) Frequency
+FROM [dbo].[sales_data_sample]
+WHERE YEAR_ID = 2004 AND MONTH_ID = 11
+GROUP BY MONTH_ID, PRODUCTLINE
+ORDER BY 3 DESC
+--classic cars is the top seller for 11/2004
+
+--What city has the highest number of sales in a specific country
+SELECT CITY, SUM (sales) Revenue
+FROM [dbo].[sales_data_sample]
+WHERE COUNTRY = 'UK'
+GROUP BY CITY
+ORDER BY 2 DESC
+
+---What is the best product in United States?
+SELECT COUNTRY, YEAR_ID, PRODUCTLINE, SUM(sales) Revenue
+FROM [dbo].[sales_data_sample]
+WHERE COUNTRY = 'USA'
+GROUP BY COUNTRY, YEAR_ID, PRODUCTLINE
+ORDER BY 4 DESC
