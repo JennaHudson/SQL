@@ -85,6 +85,80 @@ GROUP BY MONTH_ID, PRODUCTLINE
 ORDER BY 3 DESC
 --classic cars is the top seller for 11/2004
 
+----Who is our best customer (answered with RFM)
+
+
+DROP TABLE IF EXISTS #rfm
+;with rfm as 
+(
+	SELECT 
+		CUSTOMERNAME, 
+		SUM(sales) MonetaryValue,
+		AVG(sales) AvgMonetaryValue,
+		COUNT(ORDERNUMBER) Frequency,
+		MAX(ORDERDATE) last_order_date,
+		(SELECT MAX(ORDERDATE) FROM [dbo].[sales_data_sample]) max_order_date,
+		DATEDIFF(DD, max(ORDERDATE), (select max(ORDERDATE) from [dbo].[sales_data_sample])) Recency
+	FROM [PortfolioDB].[dbo].[sales_data_sample]
+	GROUP BY CUSTOMERNAME
+),
+rfm_calc as
+(
+
+	SELECT r.*,
+		NTILE(4) OVER (order by Recency desc) rfm_recency,
+		NTILE(4) OVER (order by Frequency) rfm_frequency,
+		NTILE(4) OVER (order by MonetaryValue) rfm_monetary
+	FROM rfm r
+)
+SELECT 
+	c.*, rfm_recency+ rfm_frequency+ rfm_monetary as rfm_cell,
+	CAST(rfm_recency as varchar) + CAST(rfm_frequency as varchar) + CAST(rfm_monetary  as varchar)rfm_cell_string
+INTO #rfm
+FROM rfm_calc c
+
+SELECT CUSTOMERNAME , rfm_recency, rfm_frequency, rfm_monetary,
+	case 
+		when rfm_cell_string in (111, 112 , 121, 122, 123, 132, 211, 212, 114, 141) then 'lost_customers'  --lost customers
+		when rfm_cell_string in (133, 134, 143, 244, 334, 343, 344, 144) then 'slipping away, cannot lose' -- (Big spenders who haven’t purchased lately) slipping away
+		when rfm_cell_string in (311, 411, 331) then 'new customers'
+		when rfm_cell_string in (222, 223, 233, 322) then 'potential churners'
+		when rfm_cell_string in (323, 333,321, 422, 332, 432) then 'active' --(Customers who buy often & recently, but at low price points)
+		when rfm_cell_string in (433, 434, 443, 444) then 'loyal'
+	end rfm_segment
+
+from #rfm
+
+
+
+--What products are most often sold together? 
+--SELECT * FROM [dbo].[sales_data_sample] where ORDERNUMBER =  10411
+
+SELECT DISTINCT OrderNumber, stuff(
+
+	(SELECT ',' + PRODUCTCODE
+	FROM [dbo].[sales_data_sample] p
+	WHERE ORDERNUMBER in 
+		(
+
+			select ORDERNUMBER
+			from (
+				SELECT ORDERNUMBER, count(*) rn
+				FROM [PortfolioDB].[dbo].[sales_data_sample]
+				WHERE STATUS = 'Shipped'
+				GROUP BY ORDERNUMBER
+			)m
+			where rn = 3
+		)
+		AND p.ORDERNUMBER = s.ORDERNUMBER
+		for xml path (''))
+
+		, 1, 1, '') ProductCodes
+
+FROM [dbo].[sales_data_sample] s
+ORDER BY 2 desc
+
+
 --What city has the highest number of sales in a specific country
 SELECT CITY, SUM (sales) Revenue
 FROM [dbo].[sales_data_sample]
