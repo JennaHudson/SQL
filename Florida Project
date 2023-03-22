@@ -1,0 +1,33 @@
+
+
+
+CREATE DATABASE Florida;
+
+SELECT * FROM taxonomy1;
+
+ALTER TABLE taxonomy1
+RENAME COLUMN code TO taxonomy_code;
+
+ALTER TABLE taxonomy1
+RENAME COLUMN `Grouping` TO Grouping_list;
+
+SELECT 
+    `taxonomy_code`,
+    `grouping_list`,
+    `classification`,
+    `specialization`,
+    `definition`,
+    `notes`,
+    `Display Name`,
+    `section`
+FROM
+    taxonomy1
+WHERE
+    `grouping_list` LIKE '%physical ther%'
+        OR `classification` LIKE '%physical ther%'
+        OR `specialization` LIKE '%physical ther%'
+        OR `definition` LIKE '%physical ther%'
+        OR `Display Name` LIKE '%physical ther%'
+        OR `notes` LIKE '%physical ther%';
+        
+        
